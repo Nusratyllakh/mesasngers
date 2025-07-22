@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔥 Офисный Мессенджер</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      overflow: hidden;
+    }
+
+    h2 {
+      color: #fff;
+      text-align: center;
+      font-size: 2.5em;
+      margin-top: 50px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 10px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+      font-size: 0.9em;
+      z-index: 10;
+    }
+
+    #logout-btn {
+  width: 150px;           /* ≈ 5 см */
+  height: 40px;           /* высота — опционально подбирается */
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+
+    #logout-btn:hover {
+      background: #444;
+    }
+
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: calc(85% - 80px);
+      padding-top: 30px;
+    }
+
+    #auth, #chat {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+      width: 700px;
+      max-width: 95%;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+    }
+
+    input {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    input::placeholder {
+      color: #eee;
+    }
+
+    button {
+      background: #fff;
+      color: #ff416c;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ff416c;
+      color: #fff;
+    }
+
+    a {
+      color: #fff;
+      cursor: pointer;
+    }
+
+    #messages {
+      background: rgba(255, 255, 255, 0.15);
+      height: 400px;
+      overflow-y: auto;
+      padding: 15px;
+      border-radius: 15px;
+      color: white;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+
+    #messages div {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+
+    #messages b {
+      color: #ffe5e5;
+      display: block;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #notification-login, #notification-register, #notification-chat {
+      color: #ffdddd;
+      text-align: center;
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <span>Версия: v.1.5</span>
+    <button id="logout-btn" class="hidden" onclick="logout()">Выйти</button>
+  </div>
+
+  <h2>Офисный Мессенджер</h2>
+
+  <div id="container">
+    <div id="auth">
+      <div id="login-form">
+        <h3 style="color:white;">Вход</h3>
+        <input type="text" id="login-username" placeholder="Имя пользователя" />
+        <input type="password" id="login-password" placeholder="Пароль" />
+        <button onclick="login()">Войти</button>
+        <p style="text-align:center; color:white;">Нет аккаунта? <a onclick="showRegister()">Зарегистрироваться</a></p>
+        <div id="notification-login"></div>
+      </div>
+
+      <div id="register-form" class="hidden">
+        <h3 style="color:white;">Регистрация</h3>
+        <input type="text" id="reg-username" placeholder="Имя пользователя" />
+        <input type="password" id="reg-password" placeholder="Пароль" />
+        <button onclick="register()">Зарегистрироваться</button>
+        <p style="text-align:center; color:white;">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></p>
+        <div id="notification-register"></div>
+      </div>
+    </div>
+
+    <div id="chat" class="hidden">
+      <p style="color:white;">Вы вошли как <b id="current-user" style="color:#fff;"></b></p>
+      <div id="messages"><button >"✈️"</button></div>
+      <input type="text" id="message_input" placeholder="Введите сообщение" id="send-btn" onclick="sendMessage()">
+
+      <div id="notification-chat"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = "";
+
+    function showNotification(msg, containerId, isError = true) {
+      const container = document.getElementById(containerId);
+      container.style.color = isError ? 'red' : 'lightgreen';
+      container.textContent = msg;
+      if (msg) {
+        setTimeout(() => { container.textContent = ''; }, 4000);
+      }
+    }
+
+    function showRegister() {
+      clearNotifications();
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('register-form').classList.remove('hidden');
+    }
+
+    function showLogin() {
+      clearNotifications();
+      document.getElementById('register-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+    }
+
+    function clearNotifications() {
+      showNotification('', 'notification-login');
+      showNotification('', 'notification-register');
+      showNotification('', 'notification-chat');
+    }
+
+    function login() {
+      clearNotifications();
+      const username = document.getElementById("login-username").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+      if (!username || !password) {
+        showNotification("Введите имя пользователя и пароль", "notification-login");
+        return;
+      }
+      fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) {
+          currentUser = username;
+          document.getElementById('auth').classList.add('hidden');
+          document.getElementById('chat').classList.remove('hidden');
+          document.getElementById('logout-btn').classList.remove('hidden');
+          document.getElementById('current-user').textContent = currentUser;
+          loadMessages();
+          document.getElementById('message_input').focus();
+        } else {
+          showNotification(data.error || "Ошибка входа", "notification-login");
+        }
+      });
+    }
+
+    function register() {
+      clearNotifications();
+      const username = document.getElementById("reg-username").value.trim();
+      const password = document.getElementById("reg-password").value.trim();
+      if (!username || !password) {
+        showNotification("Введите имя пользователя и пароль", "notification-register");
+        return;
+      }
+      fetch('/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) {
+          showNotification("Регистрация успешна!", "notification-register", false);
+          showLogin();
+        } else {
+          showNotification(data.error || "Ошибка регистрации", "notification-register");
+        }
+      });
+    }
+
+    function loadMessages() {
+      fetch('/messages')
+        .then(res => res.json())
+        .then(data => {
+          const box = document.getElementById("messages");
+          box.innerHTML = "";
+          data.forEach(msg => {
+            box.innerHTML += `<div><b>${escapeHtml(msg.sender)}:</b> ${escapeHtml(msg.content)}</div>`;
+          });
+          box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    function sendMessage() {
+      const content = document.getElementById("message_input").value.trim();
+      if (!content) return;
+      fetch('/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sender: currentUser, content})
+      }).then(res => {
+        if(res.ok) {
+          document.getElementById("message_input").value = "";
+          loadMessages();
+        } else {
+          showNotification("Ошибка отправки", "notification-chat");
+        }
+      });
+    }
+
+    function logout() {
+      currentUser = "";
+      document.getElementById('chat').classList.add('hidden');
+      document.getElementById('auth').classList.remove('hidden');
+      document.getElementById('logout-btn').classList.add('hidden');
+      document.getElementById('login-username').value = "";
+      document.getElementById('login-password').value = "";
+    }
+
+    document.getElementById("message_input").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    setInterval(() => {
+      if(currentUser) loadMessages();
+    }, 3000);
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
